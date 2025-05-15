@@ -264,6 +264,80 @@
             font-weight: bold;
             cursor: pointer;
         }
+        .title-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
+        .wishlist-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 1px solid #f4511e;
+            background-color: white;
+            color: #f4511e;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            font-size: 18px;
+            margin-left: 10px;
+        }
+        .wishlist-btn.active {
+            background-color: #f4511e;
+            color: white;
+        }
+        .button-row {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+        }
+        .secondary-btn {
+            flex: 1;
+            background-color: white;
+            color: #f4511e;
+            border: 1px solid #f4511e;
+            padding: 10px 15px;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 0 5px;
+        }
+        .wishlist-container {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .cart-item-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 10px;
+        }
+        .add-to-cart-small {
+            background-color: #f4511e;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        .remove-btn {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 1px solid #f4511e;
+            background-color: white;
+            color: #f4511e;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+        }
         .back-btn {
             background-color: #f4511e;
             color: white;
@@ -283,6 +357,10 @@
         <div style="display: flex; align-items: center;">
             <div class="sort-icon" onclick="toggleSortOptions()" style="margin-right: 15px; cursor: pointer;">
                 <i class="fas fa-sort fa-lg"></i>
+            </div>
+            <div class="wishlist-icon" onclick="showWishlist()" style="margin-right: 15px; cursor: pointer; position: relative;">
+                <i class="far fa-heart fa-lg"></i>
+                <div class="cart-badge" id="wishlist-badge" style="display: none;">0</div>
             </div>
             <div class="cart-icon" onclick="showCart()">
                 <i class="fas fa-shopping-cart fa-lg"></i>
@@ -316,6 +394,12 @@
         </div>
 
         <div class="cart-container" id="cart-container"></div>
+
+        <div class="wishlist-container" id="wishlist-container" style="display: none;">
+            <button class="back-btn" onclick="showProducts()"><i class="fas fa-arrow-left"></i> Back to Products</button>
+            <h2>My Wishlist</h2>
+            <div id="wishlist-items"></div>
+        </div>
     </div>
 
     <script>
@@ -323,12 +407,14 @@
         let products = [];
         let originalProducts = [];
         let cart = [];
+        let wishlist = [];
         let currentProduct = null;
         let currentSortOption = null;
 
         // Initialize the app
         document.addEventListener('DOMContentLoaded', () => {
             loadCart();
+            loadWishlist();
             fetchProducts();
         });
 
@@ -418,9 +504,15 @@
 
             const productInCart = cart.find(item => item.id === product.id);
             const cartQuantity = productInCart ? productInCart.quantity : 0;
+            const productInWishlist = isInWishlist(product.id);
 
             detailInfo.innerHTML = `
-                <h2>${product.title}</h2>
+                <div class="title-row">
+                    <h2>${product.title}</h2>
+                    <button class="wishlist-btn ${productInWishlist ? 'active' : ''}" onclick="toggleWishlist(currentProduct)">
+                        <i class="${productInWishlist ? 'fas' : 'far'} fa-heart"></i>
+                    </button>
+                </div>
                 <div class="detail-price">$${product.price.toFixed(2)}</div>
                 <div class="product-rating">
                     <div class="stars">${getStars(product.rating.rate)}</div>
@@ -430,7 +522,10 @@
                 <button class="add-to-cart-btn" onclick="addToCart(currentProduct)">
                     ${cartQuantity > 0 ? `Add More (${cartQuantity} in cart)` : 'Add to Cart'}
                 </button>
-                ${cartQuantity > 0 ? '<button class="clear-cart-btn" onclick="showCart()">View Cart</button>' : ''}
+                <div class="button-row">
+                    ${cartQuantity > 0 ? '<button class="secondary-btn" onclick="showCart()">View Cart</button>' : ''}
+                    ${productInWishlist ? '<button class="secondary-btn" onclick="showWishlist()">View Wishlist</button>' : ''}
+                </div>
             `;
         }
 
@@ -491,6 +586,7 @@
             document.getElementById('products-container').style.display = 'block';
             document.getElementById('product-detail').style.display = 'none';
             document.getElementById('cart-container').style.display = 'none';
+            document.getElementById('wishlist-container').style.display = 'none';
         }
 
         // Show cart
@@ -498,8 +594,64 @@
             document.getElementById('products-container').style.display = 'none';
             document.getElementById('product-detail').style.display = 'none';
             document.getElementById('cart-container').style.display = 'block';
+            document.getElementById('wishlist-container').style.display = 'none';
 
             renderCart();
+        }
+
+        // Show wishlist
+        function showWishlist() {
+            document.getElementById('products-container').style.display = 'none';
+            document.getElementById('product-detail').style.display = 'none';
+            document.getElementById('cart-container').style.display = 'none';
+            document.getElementById('wishlist-container').style.display = 'block';
+
+            renderWishlist();
+        }
+
+        // Render wishlist
+        function renderWishlist() {
+            const wishlistItems = document.getElementById('wishlist-items');
+
+            if (wishlist.length === 0) {
+                wishlistItems.innerHTML = `
+                    <div class="empty-cart">
+                        <i class="far fa-heart fa-3x"></i>
+                        <p>Your wishlist is empty</p>
+                        <button class="shop-now-btn" onclick="showProducts()">Start Shopping</button>
+                    </div>
+                `;
+                return;
+            }
+
+            let wishlistHTML = '';
+
+            wishlist.forEach(item => {
+                const inCart = cart.find(cartItem => cartItem.id === item.id);
+
+                wishlistHTML += `
+                    <div class="cart-item">
+                        <div class="cart-item-image" onclick="showProductDetail(${JSON.stringify(item).replace(/"/g, "'")})">
+                            <img src="${item.image}" alt="${item.title}">
+                        </div>
+                        <div class="cart-item-info">
+                            <div class="cart-item-title" onclick="showProductDetail(${JSON.stringify(item).replace(/"/g, "'")})">                                ${item.title}
+                            </div>
+                            <div class="cart-item-price">$${item.price.toFixed(2)}</div>
+                            <div class="cart-item-actions">
+                                <button class="add-to-cart-small" onclick="addToCart(${JSON.stringify(item).replace(/"/g, "'")}); renderWishlist();">
+                                    ${inCart ? 'Add More to Cart' : 'Add to Cart'}
+                                </button>
+                                <button class="remove-btn" onclick="removeFromWishlist(${JSON.stringify(item).replace(/"/g, "'")}); renderWishlist();">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            wishlistItems.innerHTML = wishlistHTML;
         }
 
         // Add product to cart
@@ -637,6 +789,62 @@
             showProducts();
         }
 
+        // Add to wishlist
+        function addToWishlist(product) {
+            // Check if product is already in wishlist
+            const existingItem = wishlist.find(item => item.id === product.id);
+            if (!existingItem) {
+                wishlist.push(product);
+                saveWishlist();
+                updateWishlistBadge();
+
+                // Update UI if on product detail page
+                if (currentProduct && currentProduct.id === product.id) {
+                    updateProductDetailWishlistUI(true);
+                }
+            }
+        }
+
+        // Remove from wishlist
+        function removeFromWishlist(product) {
+            wishlist = wishlist.filter(item => item.id !== product.id);
+            saveWishlist();
+            updateWishlistBadge();
+
+            // Update UI if on product detail page
+            if (currentProduct && currentProduct.id === product.id) {
+                updateProductDetailWishlistUI(false);
+            }
+        }
+
+        // Check if product is in wishlist
+        function isInWishlist(productId) {
+            return wishlist.some(item => item.id === productId);
+        }
+
+        // Update product detail wishlist UI
+        function updateProductDetailWishlistUI(inWishlist) {
+            const wishlistBtn = document.querySelector('.wishlist-btn');
+            if (wishlistBtn) {
+                if (inWishlist) {
+                    wishlistBtn.innerHTML = '<i class="fas fa-heart"></i>';
+                    wishlistBtn.classList.add('active');
+                } else {
+                    wishlistBtn.innerHTML = '<i class="far fa-heart"></i>';
+                    wishlistBtn.classList.remove('active');
+                }
+            }
+        }
+
+        // Toggle wishlist
+        function toggleWishlist(product) {
+            if (isInWishlist(product.id)) {
+                removeFromWishlist(product);
+            } else {
+                addToWishlist(product);
+            }
+        }
+
         // Save cart to localStorage
         function saveCart() {
             localStorage.setItem('cart', JSON.stringify(cart));
@@ -651,11 +859,38 @@
             }
         }
 
+        // Save wishlist to localStorage
+        function saveWishlist() {
+            localStorage.setItem('wishlist', JSON.stringify(wishlist));
+        }
+
+        // Load wishlist from localStorage
+        function loadWishlist() {
+            const savedWishlist = localStorage.getItem('wishlist');
+            if (savedWishlist) {
+                wishlist = JSON.parse(savedWishlist);
+                updateWishlistBadge();
+            }
+        }
+
         // Update cart badge
         function updateCartBadge() {
             const cartBadge = document.getElementById('cart-badge');
             const itemCount = cart.reduce((total, item) => total + item.quantity, 0);
             cartBadge.textContent = itemCount;
+        }
+
+        // Update wishlist badge
+        function updateWishlistBadge() {
+            const wishlistBadge = document.getElementById('wishlist-badge');
+            const itemCount = wishlist.length;
+
+            if (itemCount > 0) {
+                wishlistBadge.textContent = itemCount;
+                wishlistBadge.style.display = 'flex';
+            } else {
+                wishlistBadge.style.display = 'none';
+            }
         }
     </script>
 </body>
