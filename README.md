@@ -75,7 +75,16 @@ src/
 
 ## Screenshots
 
-(Add screenshots here)
+![image](https://github.com/user-attachments/assets/73eaa9e8-80a9-41eb-bf31-6208bb09924c)
+![image](https://github.com/user-attachments/assets/5e28a42b-1100-4e0a-8180-2b4395348f6e)
+![image](https://github.com/user-attachments/assets/92f88808-00b0-4ce8-94e1-9f68e87f9c67)
+![image](https://github.com/user-attachments/assets/48b4db01-ef5e-4226-b60a-61ccce8dd234)
+![image](https://github.com/user-attachments/assets/3f0e47d4-d349-4560-9de0-ff69b4cfe8cd)
+
+
+
+
+
 
 ## License
 
