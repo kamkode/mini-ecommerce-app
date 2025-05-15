@@ -2,11 +2,11 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { useNavigation } from '@react-navigation/native';
-import { useCart } from '../context/CartContext';
+import { useShop } from '../context/ShopContext';
 
 const Header = ({ title }) => {
   const navigation = useNavigation();
-  const { cart } = useCart();
+  const { cart } = useShop();
 
   const cartItemCount = cart.reduce((total, item) => total + item.quantity, 0);
 
