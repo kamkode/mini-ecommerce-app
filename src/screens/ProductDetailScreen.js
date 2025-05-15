@@ -10,18 +10,20 @@ import {
 } from 'react-native';
 import { fetchProductById } from '../services/api';
 import RatingStars from '../components/RatingStars';
-import { useCart } from '../context/CartContext';
+import Icon from 'react-native-vector-icons/FontAwesome';
+import { useShop } from '../context/ShopContext';
 
 const ProductDetailScreen = ({ route, navigation }) => {
   const { productId } = route.params;
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const { addToCart, cart } = useCart();
+  const { addToCart, cart, addToWishlist, removeFromWishlist, isInWishlist } = useShop();
 
   // Check if product is already in cart
   const productInCart = cart.find(item => item.id === productId);
   const cartQuantity = productInCart ? productInCart.quantity : 0;
+  const productInWishlist = isInWishlist(productId);
 
   useEffect(() => {
     const loadProduct = async () => {
@@ -47,6 +49,14 @@ const ProductDetailScreen = ({ route, navigation }) => {
 
   const handleViewCart = () => {
     navigation.navigate('Cart');
+  };
+
+  const toggleWishlist = () => {
+    if (productInWishlist) {
+      removeFromWishlist(product);
+    } else {
+      addToWishlist(product);
+    }
   };
 
   if (loading) {
@@ -77,42 +87,66 @@ const ProductDetailScreen = ({ route, navigation }) => {
         <Image source={{ uri: product.image }} style={styles.image} />
       </View>
       <View style={styles.detailsContainer}>
-        <Text style={styles.title}>{product.title}</Text>
+        <View style={styles.titleRow}>
+          <Text style={styles.title}>{product.title}</Text>
+          <TouchableOpacity
+            style={[styles.wishlistButton, productInWishlist && styles.wishlistButtonActive]}
+            onPress={toggleWishlist}
+          >
+            <Icon
+              name={productInWishlist ? 'heart' : 'heart-o'}
+              size={20}
+              color={productInWishlist ? '#fff' : '#f4511e'}
+            />
+          </TouchableOpacity>
+        </View>
+
         <Text style={styles.price}>${product.price.toFixed(2)}</Text>
-        
+
         <View style={styles.ratingContainer}>
           <RatingStars rating={product.rating.rate} size={18} />
           <Text style={styles.ratingText}>
             {product.rating.rate.toFixed(1)} ({product.rating.count} reviews)
           </Text>
         </View>
-        
+
         <Text style={styles.categoryLabel}>Category</Text>
         <Text style={styles.category}>{product.category}</Text>
-        
+
         <Text style={styles.descriptionLabel}>Description</Text>
         <Text style={styles.description}>{product.description}</Text>
-        
+
         <View style={styles.actionContainer}>
           <TouchableOpacity
             style={styles.addToCartButton}
             onPress={handleAddToCart}
           >
             <Text style={styles.addToCartButtonText}>
-              {cartQuantity > 0 
-                ? `Add More (${cartQuantity} in cart)` 
+              {cartQuantity > 0
+                ? `Add More (${cartQuantity} in cart)`
                 : 'Add to Cart'}
             </Text>
           </TouchableOpacity>
-          
-          {cartQuantity > 0 && (
-            <TouchableOpacity
-              style={styles.viewCartButton}
-              onPress={handleViewCart}
-            >
-              <Text style={styles.viewCartButtonText}>View Cart</Text>
-            </TouchableOpacity>
-          )}
+
+          <View style={styles.secondaryButtons}>
+            {cartQuantity > 0 && (
+              <TouchableOpacity
+                style={styles.viewCartButton}
+                onPress={handleViewCart}
+              >
+                <Text style={styles.viewCartButtonText}>View Cart</Text>
+              </TouchableOpacity>
+            )}
+
+            {productInWishlist && (
+              <TouchableOpacity
+                style={styles.viewWishlistButton}
+                onPress={() => navigation.navigate('Wishlist')}
+              >
+                <Text style={styles.viewWishlistButtonText}>View Wishlist</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
       </View>
     </ScrollView>
@@ -162,10 +196,30 @@ const styles = StyleSheet.create({
   detailsContainer: {
     padding: 16,
   },
+  titleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
   title: {
     fontSize: 20,
     fontWeight: 'bold',
-    marginBottom: 8,
+    flex: 1,
+    marginRight: 10,
+  },
+  wishlistButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#f4511e',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'white',
+  },
+  wishlistButtonActive: {
+    backgroundColor: '#f4511e',
   },
   price: {
     fontSize: 24,
@@ -220,15 +274,36 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
+  secondaryButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
   viewCartButton: {
+    flex: 1,
     backgroundColor: '#fff',
     paddingVertical: 14,
     borderRadius: 8,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#f4511e',
+    marginRight: 8,
   },
   viewCartButtonText: {
+    color: '#f4511e',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  viewWishlistButton: {
+    flex: 1,
+    backgroundColor: '#fff',
+    paddingVertical: 14,
+    borderRadius: 8,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#f4511e',
+    marginLeft: 8,
+  },
+  viewWishlistButtonText: {
     color: '#f4511e',
     fontSize: 16,
     fontWeight: 'bold',

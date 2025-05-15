@@ -8,11 +8,11 @@ import {
   Alert,
 } from 'react-native';
 import CartItem from '../components/CartItem';
-import { useCart } from '../context/CartContext';
+import { useShop } from '../context/ShopContext';
 import Icon from 'react-native-vector-icons/FontAwesome';
 
 const CartScreen = ({ navigation }) => {
-  const { cart, total, clearCart } = useCart();
+  const { cart, total, clearCart, wishlist } = useShop();
 
   const handleClearCart = () => {
     Alert.alert(
@@ -72,7 +72,7 @@ const CartScreen = ({ navigation }) => {
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={styles.listContent}
       />
-      
+
       <View style={styles.summaryContainer}>
         <View style={styles.summaryRow}>
           <Text style={styles.summaryLabel}>Total Items:</Text>
@@ -80,12 +80,12 @@ const CartScreen = ({ navigation }) => {
             {cart.reduce((sum, item) => sum + item.quantity, 0)}
           </Text>
         </View>
-        
+
         <View style={styles.summaryRow}>
           <Text style={styles.summaryLabel}>Total Amount:</Text>
           <Text style={styles.summaryTotal}>${total.toFixed(2)}</Text>
         </View>
-        
+
         <View style={styles.actionsContainer}>
           <TouchableOpacity
             style={styles.clearButton}
@@ -93,7 +93,7 @@ const CartScreen = ({ navigation }) => {
           >
             <Text style={styles.clearButtonText}>Clear Cart</Text>
           </TouchableOpacity>
-          
+
           <TouchableOpacity
             style={styles.checkoutButton}
             onPress={handleCheckout}

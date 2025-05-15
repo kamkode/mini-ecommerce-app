@@ -13,7 +13,7 @@ import {
 import { fetchProducts, fetchCategories } from '../services/api';
 import ProductCard from '../components/ProductCard';
 import Icon from 'react-native-vector-icons/FontAwesome';
-import { useCart } from '../context/CartContext';
+import { useShop } from '../context/ShopContext';
 
 const ProductListScreen = ({ navigation }) => {
   const [products, setProducts] = useState([]);
@@ -25,9 +25,10 @@ const ProductListScreen = ({ navigation }) => {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [sortModalVisible, setSortModalVisible] = useState(false);
   const [sortOption, setSortOption] = useState(null);
-  const { cart } = useCart();
+  const { cart, wishlist } = useShop();
 
   const cartItemCount = cart.reduce((total, item) => total + item.quantity, 0);
+  const wishlistCount = wishlist.length;
 
   useEffect(() => {
     const loadData = async () => {
@@ -179,7 +180,7 @@ const ProductListScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      {/* Search Bar */}
+      {/* Header Actions */}
       <View style={styles.searchContainer}>
         <View style={styles.searchInputContainer}>
           <Icon name="search" size={18} color="#999" style={styles.searchIcon} />
@@ -195,12 +196,25 @@ const ProductListScreen = ({ navigation }) => {
             </TouchableOpacity>
           ) : null}
         </View>
-        <TouchableOpacity
-          style={styles.sortButton}
-          onPress={() => setSortModalVisible(true)}
-        >
-          <Icon name="sort" size={18} color="#f4511e" />
-        </TouchableOpacity>
+        <View style={styles.headerButtons}>
+          <TouchableOpacity
+            style={styles.iconButton}
+            onPress={() => navigation.navigate('Wishlist')}
+          >
+            <Icon name="heart" size={18} color="#f4511e" />
+            {wishlistCount > 0 && (
+              <View style={styles.badgeSmall}>
+                <Text style={styles.badgeTextSmall}>{wishlistCount}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.iconButton}
+            onPress={() => setSortModalVisible(true)}
+          >
+            <Icon name="sort" size={18} color="#f4511e" />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Categories */}
@@ -360,13 +374,34 @@ const styles = StyleSheet.create({
     height: 40,
     fontSize: 16,
   },
-  sortButton: {
+  headerButtons: {
+    flexDirection: 'row',
+  },
+  iconButton: {
     width: 40,
     height: 40,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#f5f5f5',
     borderRadius: 8,
+    marginLeft: 8,
+    position: 'relative',
+  },
+  badgeSmall: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    backgroundColor: '#f4511e',
+    borderRadius: 10,
+    width: 16,
+    height: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  badgeTextSmall: {
+    color: 'white',
+    fontSize: 10,
+    fontWeight: 'bold',
   },
   categoriesContainer: {
     backgroundColor: 'white',

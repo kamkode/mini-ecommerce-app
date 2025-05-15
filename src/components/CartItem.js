@@ -1,10 +1,11 @@
 import React from 'react';
 import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
-import { useCart } from '../context/CartContext';
+import { useShop } from '../context/ShopContext';
 
 const CartItem = ({ item }) => {
-  const { updateQuantity, removeFromCart } = useCart();
+  const { updateQuantity, removeFromCart, addToWishlist, isInWishlist } = useShop();
+  const inWishlist = isInWishlist(item.id);
 
   const handleIncrement = () => {
     updateQuantity(item.id, item.quantity + 1);
@@ -36,12 +37,22 @@ const CartItem = ({ item }) => {
           </TouchableOpacity>
         </View>
       </View>
-      <TouchableOpacity 
-        style={styles.removeButton} 
-        onPress={() => removeFromCart(item)}
-      >
-        <Icon name="trash" size={20} color="#f4511e" />
-      </TouchableOpacity>
+      <View style={styles.actionButtons}>
+        {!inWishlist && (
+          <TouchableOpacity
+            style={styles.wishlistButton}
+            onPress={() => addToWishlist(item)}
+          >
+            <Icon name="heart-o" size={16} color="#f4511e" />
+          </TouchableOpacity>
+        )}
+        <TouchableOpacity
+          style={styles.removeButton}
+          onPress={() => removeFromCart(item)}
+        >
+          <Icon name="trash" size={16} color="#f4511e" />
+        </TouchableOpacity>
+      </View>
     </View>
   );
 };
@@ -98,9 +109,29 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
   },
-  removeButton: {
+  actionButtons: {
     justifyContent: 'center',
-    padding: 10,
+    alignItems: 'center',
+  },
+  removeButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#f4511e',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  wishlistButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#f4511e',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
   },
 });
 
