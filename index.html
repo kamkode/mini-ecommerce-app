@@ -280,11 +280,25 @@
 <body>
     <header>
         <h1>Mini E-commerce</h1>
-        <div class="cart-icon" onclick="showCart()">
-            <i class="fas fa-shopping-cart fa-lg"></i>
-            <div class="cart-badge" id="cart-badge">0</div>
+        <div style="display: flex; align-items: center;">
+            <div class="sort-icon" onclick="toggleSortOptions()" style="margin-right: 15px; cursor: pointer;">
+                <i class="fas fa-sort fa-lg"></i>
+            </div>
+            <div class="cart-icon" onclick="showCart()">
+                <i class="fas fa-shopping-cart fa-lg"></i>
+                <div class="cart-badge" id="cart-badge">0</div>
+            </div>
         </div>
     </header>
+
+    <!-- Sort Options Dropdown -->
+    <div id="sort-options" style="display: none; position: absolute; right: 60px; top: 60px; background: white; border: 1px solid #ddd; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 100;">
+        <div style="padding: 10px; border-bottom: 1px solid #eee; font-weight: bold;">Sort By</div>
+        <div class="sort-option" onclick="sortProducts('price-low-high')" style="padding: 10px; cursor: pointer; border-bottom: 1px solid #eee;">Price: Low to High</div>
+        <div class="sort-option" onclick="sortProducts('price-high-low')" style="padding: 10px; cursor: pointer; border-bottom: 1px solid #eee;">Price: High to Low</div>
+        <div class="sort-option" onclick="sortProducts('rating')" style="padding: 10px; cursor: pointer; border-bottom: 1px solid #eee;">Highest Rated</div>
+        <div class="sort-option" onclick="sortProducts(null)" style="padding: 10px; cursor: pointer;">Default</div>
+    </div>
 
     <div class="container">
         <div id="products-container">
@@ -307,8 +321,10 @@
     <script>
         // Global variables
         let products = [];
+        let originalProducts = [];
         let cart = [];
         let currentProduct = null;
+        let currentSortOption = null;
 
         // Initialize the app
         document.addEventListener('DOMContentLoaded', () => {
@@ -323,7 +339,9 @@
                 if (!response.ok) {
                     throw new Error('Failed to fetch products');
                 }
-                products = await response.json();
+                const data = await response.json();
+                products = [...data];
+                originalProducts = [...data];
                 displayProducts();
             } catch (error) {
                 document.getElementById('loading').style.display = 'none';
@@ -336,14 +354,14 @@
         function displayProducts() {
             const productsGrid = document.getElementById('products-grid');
             document.getElementById('loading').style.display = 'none';
-            
+
             productsGrid.innerHTML = '';
-            
+
             products.forEach(product => {
                 const productCard = document.createElement('div');
                 productCard.className = 'product-card';
                 productCard.onclick = () => showProductDetail(product);
-                
+
                 productCard.innerHTML = `
                     <div class="product-image">
                         <img src="${product.image}" alt="${product.title}">
@@ -357,7 +375,7 @@
                         </div>
                     </div>
                 `;
-                
+
                 productsGrid.appendChild(productCard);
             });
         }
@@ -367,40 +385,40 @@
             const fullStars = Math.floor(rating);
             const halfStar = rating % 1 >= 0.5;
             const emptyStars = 5 - fullStars - (halfStar ? 1 : 0);
-            
+
             let starsHTML = '';
-            
+
             for (let i = 0; i < fullStars; i++) {
                 starsHTML += '<i class="fas fa-star"></i>';
             }
-            
+
             if (halfStar) {
                 starsHTML += '<i class="fas fa-star-half-alt"></i>';
             }
-            
+
             for (let i = 0; i < emptyStars; i++) {
                 starsHTML += '<i class="far fa-star"></i>';
             }
-            
+
             return starsHTML;
         }
 
         // Show product detail
         function showProductDetail(product) {
             currentProduct = product;
-            
+
             document.getElementById('products-container').style.display = 'none';
             document.getElementById('cart-container').style.display = 'none';
             document.getElementById('product-detail').style.display = 'block';
-            
+
             const detailImage = document.getElementById('detail-image');
             const detailInfo = document.getElementById('detail-info');
-            
+
             detailImage.innerHTML = `<img src="${product.image}" alt="${product.title}">`;
-            
+
             const productInCart = cart.find(item => item.id === product.id);
             const cartQuantity = productInCart ? productInCart.quantity : 0;
-            
+
             detailInfo.innerHTML = `
                 <h2>${product.title}</h2>
                 <div class="detail-price">$${product.price.toFixed(2)}</div>
@@ -416,6 +434,58 @@
             `;
         }
 
+        // Toggle sort options dropdown
+        function toggleSortOptions() {
+            const sortOptions = document.getElementById('sort-options');
+            if (sortOptions.style.display === 'none') {
+                sortOptions.style.display = 'block';
+                // Close dropdown when clicking outside
+                document.addEventListener('click', closeSortOptionsOnClickOutside);
+            } else {
+                sortOptions.style.display = 'none';
+                document.removeEventListener('click', closeSortOptionsOnClickOutside);
+            }
+        }
+
+        // Close sort options when clicking outside
+        function closeSortOptionsOnClickOutside(event) {
+            const sortOptions = document.getElementById('sort-options');
+            const sortIcon = document.querySelector('.sort-icon');
+
+            if (!sortOptions.contains(event.target) && !sortIcon.contains(event.target)) {
+                sortOptions.style.display = 'none';
+                document.removeEventListener('click', closeSortOptionsOnClickOutside);
+            }
+        }
+
+        // Sort products
+        function sortProducts(option) {
+            currentSortOption = option;
+            let sortedProducts = [...products];
+
+            switch (option) {
+                case 'price-low-high':
+                    sortedProducts.sort((a, b) => a.price - b.price);
+                    break;
+                case 'price-high-low':
+                    sortedProducts.sort((a, b) => b.price - a.price);
+                    break;
+                case 'rating':
+                    sortedProducts.sort((a, b) => b.rating.rate - a.rating.rate);
+                    break;
+                default:
+                    // Default sorting (by id)
+                    sortedProducts = [...originalProducts];
+            }
+
+            products = sortedProducts;
+            displayProducts();
+
+            // Close the sort options dropdown
+            document.getElementById('sort-options').style.display = 'none';
+            document.removeEventListener('click', closeSortOptionsOnClickOutside);
+        }
+
         // Show products grid
         function showProducts() {
             document.getElementById('products-container').style.display = 'block';
@@ -428,14 +498,14 @@
             document.getElementById('products-container').style.display = 'none';
             document.getElementById('product-detail').style.display = 'none';
             document.getElementById('cart-container').style.display = 'block';
-            
+
             renderCart();
         }
 
         // Add product to cart
         function addToCart(product) {
             const existingItem = cart.find(item => item.id === product.id);
-            
+
             if (existingItem) {
                 existingItem.quantity += 1;
             } else {
@@ -444,18 +514,18 @@
                     quantity: 1
                 });
             }
-            
+
             saveCart();
             updateCartBadge();
-            
+
             // Update the Add to Cart button text
             if (currentProduct && currentProduct.id === product.id) {
                 const addToCartBtn = document.querySelector('.add-to-cart-btn');
                 const productInCart = cart.find(item => item.id === product.id);
                 const cartQuantity = productInCart ? productInCart.quantity : 0;
-                
+
                 addToCartBtn.textContent = `Add More (${cartQuantity} in cart)`;
-                
+
                 // Add View Cart button if not already present
                 if (!document.querySelector('.clear-cart-btn')) {
                     const viewCartBtn = document.createElement('button');
@@ -481,7 +551,7 @@
                 removeFromCart(productId);
                 return;
             }
-            
+
             const item = cart.find(item => item.id === productId);
             if (item) {
                 item.quantity = newQuantity;
@@ -494,7 +564,7 @@
         // Render cart contents
         function renderCart() {
             const cartContainer = document.getElementById('cart-container');
-            
+
             if (cart.length === 0) {
                 cartContainer.innerHTML = `
                     <div class="empty-cart">
@@ -505,12 +575,12 @@
                 `;
                 return;
             }
-            
+
             let cartHTML = `
                 <button class="back-btn" onclick="showProducts()"><i class="fas fa-arrow-left"></i> Back to Products</button>
                 <h2>Shopping Cart</h2>
             `;
-            
+
             cart.forEach(item => {
                 cartHTML += `
                     <div class="cart-item">
@@ -532,9 +602,9 @@
                     </div>
                 `;
             });
-            
+
             const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-            
+
             cartHTML += `
                 <div class="cart-summary">
                     <div class="cart-total">Total: $${total.toFixed(2)}</div>
@@ -544,7 +614,7 @@
                     </div>
                 </div>
             `;
-            
+
             cartContainer.innerHTML = cartHTML;
         }
 
